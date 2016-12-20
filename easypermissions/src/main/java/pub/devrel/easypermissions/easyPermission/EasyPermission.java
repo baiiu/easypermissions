@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package pub.devrel.easypermissions;
+package pub.devrel.easypermissions.easyPermission;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -30,7 +30,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -42,9 +41,9 @@ public class EasyPermission {
 
     public interface PermissionCallback extends ActivityCompat.OnRequestPermissionsResultCallback {
 
-        void onPermissionGranted(int requestCode, List<String> perms);
+        void onEasyPermissionGranted(int requestCode, String... perms);
 
-        void onPermissionDenied(int requestCode, List<String> perms);
+        void onEasyPermissionDenied(int requestCode, String... perms);
 
     }
 
@@ -94,8 +93,7 @@ public class EasyPermission {
     }
 
     public void request() {
-        requestPermissions(object, mRationale, mPositiveButtonText, mNegativeButtonText, mRequestCode,
-                           mPermissions);
+        requestPermissions(object, mRationale, mPositiveButtonText, mNegativeButtonText, mRequestCode, mPermissions);
     }
 
     /**
@@ -107,9 +105,12 @@ public class EasyPermission {
             return true;
         }
 
+        if (perms == null || perms.length == 0) {
+            return true;
+        }
+
         for (String perm : perms) {
-            boolean hasPerm =
-                    (ContextCompat.checkSelfPermission(context, perm) == PackageManager.PERMISSION_GRANTED);
+            boolean hasPerm = (ContextCompat.checkSelfPermission(context, perm) == PackageManager.PERMISSION_GRANTED);
             if (!hasPerm) {
                 return false;
             }
@@ -123,42 +124,39 @@ public class EasyPermission {
      */
     public static void requestPermissions(final Object object, String rationale, final int requestCode,
             final String... perms) {
-        requestPermissions(object, rationale, android.R.string.ok, android.R.string.cancel, requestCode,
-                           perms);
+        requestPermissions(object, rationale, android.R.string.ok, android.R.string.cancel, requestCode, perms);
     }
 
     /**
      * Request a set of permissions, showing rationale if the system requests it.
      */
-    public static void requestPermissions(final Object object, String rationale,
-            @StringRes int positiveButton, @StringRes int negativeButton, final int requestCode,
-            final String... permissions) {
+    public static void requestPermissions(final Object object, String rationale, @StringRes int positiveButton,
+            @StringRes int negativeButton, final int requestCode, final String... permissions) {
 
         checkCallingObjectSuitability(object);
 
         PermissionCallback mCallBack = (PermissionCallback) object;
 
         if (!Utils.isOverMarshmallow()) {
-            mCallBack.onPermissionGranted(requestCode, Arrays.asList(permissions));
+            mCallBack.onEasyPermissionGranted(requestCode, permissions);
             return;
         }
 
-        final List<String> deniedPermissions =
-                Utils.findDeniedPermissions(Utils.getActivity(object), permissions);
-
+        final List<String> deniedPermissions = Utils.findDeniedPermissions(Utils.getActivity(object), permissions);
+        if (deniedPermissions == null) {
+            return;
+        }
 
         boolean shouldShowRationale = false;
         for (String perm : deniedPermissions) {
-            shouldShowRationale =
-                    shouldShowRationale || Utils.shouldShowRequestPermissionRationale(object, perm);
+            shouldShowRationale = shouldShowRationale || Utils.shouldShowRequestPermissionRationale(object, perm);
         }
 
         if (Utils.isEmpty(deniedPermissions)) {
-            mCallBack.onPermissionGranted(requestCode, Arrays.asList(permissions));
+            mCallBack.onEasyPermissionGranted(requestCode, permissions);
         } else {
 
-            final String[] deniedPermissionArray =
-                    deniedPermissions.toArray(new String[deniedPermissions.size()]);
+            final String[] deniedPermissionArray = deniedPermissions.toArray(new String[deniedPermissions.size()]);
 
             if (shouldShowRationale) {
                 Activity activity = Utils.getActivity(object);
@@ -175,8 +173,8 @@ public class EasyPermission {
                         .setNegativeButton(negativeButton, new DialogInterface.OnClickListener() {
                             @Override public void onClick(DialogInterface dialog, int which) {
                                 // act as if the permissions were denied
-                                ((PermissionCallback) object).onPermissionDenied(requestCode,
-                                                                                 deniedPermissions);
+                                ((PermissionCallback) object).onEasyPermissionDenied(requestCode,
+                                                                                     deniedPermissionArray);
                             }
                         })
                         .create()
@@ -187,8 +185,7 @@ public class EasyPermission {
         }
     }
 
-    @TargetApi(23)
-    private static void executePermissionsRequest(Object object, String[] perms, int requestCode) {
+    @TargetApi(23) private static void executePermissionsRequest(Object object, String[] perms, int requestCode) {
         checkCallingObjectSuitability(object);
 
         if (object instanceof Activity) {
@@ -217,9 +214,10 @@ public class EasyPermission {
         }
 
         if (Utils.isEmpty(deniedPermissions)) {
-            mCallBack.onPermissionGranted(requestCode, Arrays.asList(permissions));
+            mCallBack.onEasyPermissionGranted(requestCode, permissions);
         } else {
-            mCallBack.onPermissionDenied(requestCode, deniedPermissions);
+            mCallBack.onEasyPermissionDenied(requestCode,
+                                             deniedPermissions.toArray(new String[deniedPermissions.size()]));
         }
     }
 
@@ -227,9 +225,9 @@ public class EasyPermission {
      * with a {@code null} argument for the negative buttonOnClickListener.
      */
     public static boolean checkDeniedPermissionsNeverAskAgain(final Object object, String rationale,
-            @StringRes int positiveButton, @StringRes int negativeButton, List<String> deniedPerms) {
-        return checkDeniedPermissionsNeverAskAgain(object, rationale, positiveButton, negativeButton, null,
-                                                   deniedPerms);
+            String... deniedPerms) {
+        return checkDeniedPermissionsNeverAskAgain(object, rationale, android.R.string.ok, android.R.string.cancel,
+                                                   null, deniedPerms);
     }
 
     /**
@@ -245,14 +243,13 @@ public class EasyPermission {
      * <p>
      *
      * NOTE: use of this method is optional, should be called from
-     * {@link PermissionCallback#onPermissionDenied(int, List)}
+     * {@link PermissionCallback#onEasyPermissionDenied(int, String[])}
      *
      * @return {@code true} if user denied at least one permission with the flag NEVER ASK AGAIN.
      */
     public static boolean checkDeniedPermissionsNeverAskAgain(final Object object, String rationale,
             @StringRes int positiveButton, @StringRes int negativeButton,
-            @Nullable DialogInterface.OnClickListener negativeButtonOnClickListener,
-            List<String> deniedPerms) {
+            @Nullable DialogInterface.OnClickListener negativeButtonOnClickListener, String... deniedPerms) {
         boolean shouldShowRationale;
         for (String perm : deniedPerms) {
             shouldShowRationale = Utils.shouldShowRequestPermissionRationale(object, perm);
