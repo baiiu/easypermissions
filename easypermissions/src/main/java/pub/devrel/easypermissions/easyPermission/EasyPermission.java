@@ -23,12 +23,15 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.provider.Settings;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.StringRes;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.AppOpsManagerCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
+import android.text.TextUtils;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -99,7 +102,7 @@ public class EasyPermission {
     /**
      * Check if the calling context has a set of permissions.
      */
-    public static boolean hasPermissions(Context context, String... perms) {
+    public static boolean hasPermissions(@NonNull Context context, String... perms) {
         // Always return true for SDK < M, let the system deal with the permissions
         if (!Utils.isOverMarshmallow()) {
             return true;
@@ -112,6 +115,36 @@ public class EasyPermission {
         for (String perm : perms) {
             boolean hasPerm = (ContextCompat.checkSelfPermission(context, perm) == PackageManager.PERMISSION_GRANTED);
             if (!hasPerm) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static boolean hasPermissionAfterSuccess(@NonNull Context context, String... perms) {
+        if (!Utils.isOverMarshmallow()) {
+            return true;
+        }
+
+        if (perms == null || perms.length == 0) {
+            return true;
+        }
+
+        for (String perm : perms) {
+            int result = ContextCompat.checkSelfPermission(context, perm);
+            if (result == PackageManager.PERMISSION_DENIED) {
+                return false;
+            }
+
+            String op = AppOpsManagerCompat.permissionToOp(perm);
+            //noinspection ConstantConditions
+            if (TextUtils.isEmpty(op)) {
+                continue;
+            }
+
+            result = AppOpsManagerCompat.noteProxyOp(context, op, context.getPackageName());
+            if (result != AppOpsManagerCompat.MODE_ALLOWED) {
                 return false;
             }
         }

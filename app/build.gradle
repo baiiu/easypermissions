@@ -1,16 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion "23.0.3"
+    compileSdkVersion 26
 
     defaultConfig {
         applicationId "pub.devrel.easypermissions.sample"
-        minSdkVersion 9
-        targetSdkVersion 23
-        versionCode 1
-        versionName "1.0"
+        minSdkVersion 15
+        targetSdkVersion 26
     }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -20,7 +18,6 @@ android {
 }
 
 dependencies {
-    compile 'com.android.support:appcompat-v7:23.4.0'
-
-    compile project(':easypermissions')
+    implementation 'com.android.support:appcompat-v7:26.1.0'
+    implementation project(':easypermissions')
 }
