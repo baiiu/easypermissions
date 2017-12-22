@@ -12,7 +12,6 @@ import pub.devrel.easypermissions.easyPermission.EasyPermission;
  * date: on 16/12/20 16:31
  * description:
  */
-
 public abstract class BasePermissionFragment extends Fragment implements EasyPermission.PermissionCallback {
     protected Context mContext;
     private int mRequestCode;

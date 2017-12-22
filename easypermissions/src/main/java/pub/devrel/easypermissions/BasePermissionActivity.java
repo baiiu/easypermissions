@@ -11,8 +11,7 @@ import pub.devrel.easypermissions.easyPermission.EasyPermission;
  * date: on 16/12/20 19:32
  * description:
  */
-
-public class BasePermissionActivity extends AppCompatActivity implements EasyPermission.PermissionCallback {
+public abstract class BasePermissionActivity extends AppCompatActivity implements EasyPermission.PermissionCallback {
     private int mRequestCode;
     private String[] mPermissions;
     private PermissionCallBackM mPermissionCallBack;
